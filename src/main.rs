@@ -4,9 +4,11 @@
 extern crate serde;
 extern crate serde_json;
 extern crate reqwest;
+extern crate dotenv;
 
 use std::env;
 use serenity::prelude::EventHandler;
+use dotenv::dotenv;
 
 #[derive(Deserialize)]
 struct Translation {
@@ -21,6 +23,8 @@ impl EventHandler for Handler {}
 
 
 fn main() {
+    dotenv().ok();
+
     let token = env::var("DISCORD_TOKEN").expect("token");
 
     let mut client = serenity::client::Client::new(&token, Handler).unwrap();
