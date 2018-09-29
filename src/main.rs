@@ -38,10 +38,10 @@ fn main() {
     }
 }
 
-fn translate(text: &str) -> String
+fn translate(text: &str, lang: &str) -> String
 {
     let key = env::var("YANDEX_KEY").expect("yandex key");
-    let url = format!("https://translate.yandex.net/api/v1.5/tr.json/translate?key={}&text={}&lang=es", key, text);
+    let url = format!("https://translate.yandex.net/api/v1.5/tr.json/translate?key={}&text={}&lang={}", key, text, lang);
     println!("{}", url);
 
     let res = reqwest::get(&url);
@@ -55,7 +55,20 @@ fn translate(text: &str) -> String
 }
 
 command!(translate_message(_context, message) {
-    let new_content = &message.content[3..];
+    let new_content = &message.content[4..];
+    let mut lang = String::from("en");
+    let mut proc_content = String::new();
 
-    let _ = message.reply(&translate(new_content));
+    for seg in new_content.split_whitespace() {
+
+        if seg.starts_with("d-") {
+            lang = seg.replace("d-", "");
+        }
+        else {
+            proc_content.push_str(seg);
+            proc_content.push_str(" ");
+        }
+    }
+
+    let _ = message.reply(&translate(proc_content.trim(), &lang));
 });
