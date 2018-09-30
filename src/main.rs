@@ -31,6 +31,7 @@ fn main() {
     client.with_framework(serenity::framework::standard::StandardFramework::new()
         .configure(|c| c.prefix("?t"))
         .cmd("r", translate_message)
+        .cmd("help", help)
     );
 
     if let Err(e) = client.start() {
@@ -71,4 +72,8 @@ command!(translate_message(_context, message) {
     }
 
     let _ = message.reply(&translate(proc_content.trim(), &lang));
+});
+
+command!(help(_context, message) {
+    let _ = message.channel_id.send_message(|m| {m.content("Help")});
 });
