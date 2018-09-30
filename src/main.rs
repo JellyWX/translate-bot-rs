@@ -32,6 +32,7 @@ fn main() {
         .configure(|c| c.prefix("?t"))
         .cmd("r", translate_message)
         .cmd("help", help)
+        .cmd("langs", langs)
     );
 
     if let Err(e) = client.start() {
@@ -43,13 +44,11 @@ fn translate(text: &str, lang: &str) -> String
 {
     let key = env::var("YANDEX_KEY").expect("yandex key");
     let url = format!("https://translate.yandex.net/api/v1.5/tr.json/translate?key={}&text={}&lang={}", key, text.replace("#", "%23"), lang);
-    println!("{}", url);
 
     let res = reqwest::get(&url);
     if let Ok(mut response) = res
     {
         let ret: Translation = response.json().unwrap();
-        println!("{}", ret.lang);
         return ret.text.join(" ");
     }
     return "".to_owned()
@@ -75,5 +74,24 @@ command!(translate_message(_context, message) {
 });
 
 command!(help(_context, message) {
-    let _ = message.channel_id.send_message(|m| {m.content("Help")});
+    let _ = message.channel_id.send_message(|m| {
+        m.embed(|e| {
+            e.title("Help")
+            .description("
+            `?thelp` - Get this page
+
+            `?tr <text> d-[lang]` - Translate text; example:
+
+```
+>> ?tr Hello world! d-es
+<< @JellyWX: Hola mundo!```
+
+            `?tlangs` - Get a list of all supported languages with codes
+            ")
+        })
+    });
+});
+
+command!(langs(_context, message) {
+    let _ = message.channel_id.say("A full list of languages and codes is available here: https://gist.github.com/JellyWX/f1d83c6966c93c83c126affd2640886a");
 });
