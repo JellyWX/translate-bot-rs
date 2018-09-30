@@ -1,5 +1,6 @@
 #[macro_use] extern crate serenity;
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate lazy_static;
 
 extern crate serde;
 extern crate serde_json;
@@ -12,10 +13,19 @@ use serenity::model::gateway::{Game, Ready};
 use serenity::prelude::Context;
 use dotenv::dotenv;
 
+
+lazy_static! {
+    static ref YANDEX_KEY: String = env::var("YANDEX_KEY").expect("yandex key");
+}
+
 #[derive(Deserialize)]
 struct Translation {
-    lang: String,
-    code: u16,
+    #[serde(rename="lang")]
+    _lang: String,
+
+    #[serde(rename="code")]
+    _code: u16,
+
     text: Vec<String>
 }
 
@@ -51,8 +61,7 @@ fn main() {
 
 fn translate(text: &str, lang: &str) -> String
 {
-    let key = env::var("YANDEX_KEY").expect("yandex key");
-    let url = format!("https://translate.yandex.net/api/v1.5/tr.json/translate?key={}&text={}&lang={}", key, text.replace("#", "%23"), lang);
+    let url = format!("https://translate.yandex.net/api/v1.5/tr.json/translate?key={}&text={}&lang={}", *YANDEX_KEY, text.replace("#", "%23"), lang);
 
     let res = reqwest::get(&url);
     if let Ok(mut response) = res
