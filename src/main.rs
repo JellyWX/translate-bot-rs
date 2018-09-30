@@ -8,6 +8,8 @@ extern crate dotenv;
 
 use std::env;
 use serenity::prelude::EventHandler;
+use serenity::model::gateway::{Game, Ready};
+use serenity::prelude::Context;
 use dotenv::dotenv;
 
 #[derive(Deserialize)]
@@ -19,7 +21,13 @@ struct Translation {
 
 struct Handler;
 
-impl EventHandler for Handler {}
+impl EventHandler for Handler {
+    fn ready(&self, context: Context, _: Ready) {
+        println!("Bot online!");
+
+        context.set_game(Game::playing("?thelp | ?tr"));
+    }
+}
 
 
 fn main() {
@@ -30,6 +38,7 @@ fn main() {
     let mut client = serenity::client::Client::new(&token, Handler).unwrap();
     client.with_framework(serenity::framework::standard::StandardFramework::new()
         .configure(|c| c.prefix("?t"))
+
         .cmd("r", translate_message)
         .cmd("help", help)
         .cmd("langs", langs)
@@ -51,13 +60,13 @@ fn translate(text: &str, lang: &str) -> String
         let ret: Translation = response.json().unwrap();
         return ret.text.join(" ");
     }
-    return "".to_owned()
+    return String::new();
 }
 
 command!(translate_message(_context, message) {
     let new_content = &message.content[4..];
     let mut lang = String::from("en");
-    let mut proc_content = String::new();
+    let mut proc_content = String::from("\u{200b}");
 
     for seg in new_content.split_whitespace() {
 
