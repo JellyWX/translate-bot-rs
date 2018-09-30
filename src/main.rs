@@ -41,7 +41,7 @@ fn main() {
 fn translate(text: &str, lang: &str) -> String
 {
     let key = env::var("YANDEX_KEY").expect("yandex key");
-    let url = format!("https://translate.yandex.net/api/v1.5/tr.json/translate?key={}&text={}&lang={}", key, text, lang);
+    let url = format!("https://translate.yandex.net/api/v1.5/tr.json/translate?key={}&text={}&lang={}", key, text.replace("#", "%23"), lang);
     println!("{}", url);
 
     let res = reqwest::get(&url);
