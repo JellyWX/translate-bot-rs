@@ -6,12 +6,16 @@ extern crate serde;
 extern crate serde_json;
 extern crate reqwest;
 extern crate dotenv;
+extern crate typemap;
 
 use std::env;
 use serenity::prelude::EventHandler;
 use serenity::model::gateway::{Game, Ready};
 use serenity::prelude::Context;
 use dotenv::dotenv;
+use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
+use typemap::Key;
 
 
 lazy_static! {
@@ -28,6 +32,13 @@ struct Translation {
 
     text: Vec<String>
 }
+
+struct RateLimiter;
+
+impl Key for RateLimiter {
+    type Value = HashMap<u64, Vec<u32>>;
+}
+
 
 struct Handler;
 
@@ -53,26 +64,36 @@ fn main() {
         .cmd("help", help)
         .cmd("langs", langs)
     );
+    {
+        let mut data = client.data.lock();
+        data.insert::<RateLimiter>(HashMap::default());
+    }
 
     if let Err(e) = client.start() {
         println!("An error occured: {:?}", e);
     }
 }
 
-fn translate(text: &str, lang: &str) -> String
-{
+fn translate(text: &str, lang: &str) -> String {
     let url = format!("https://translate.yandex.net/api/v1.5/tr.json/translate?key={}&text={}&lang={}", *YANDEX_KEY, text.replace("#", "%23"), lang);
 
     let res = reqwest::get(&url);
-    if let Ok(mut response) = res
-    {
+    if let Ok(mut response) = res {
         let ret: Translation = response.json().unwrap();
         return ret.text.join(" ");
     }
     return String::new();
 }
 
-command!(translate_message(_context, message) {
+fn time() -> u32 {
+    let start = SystemTime::now();
+    let since_epoch = start.duration_since(UNIX_EPOCH).unwrap();
+
+    since_epoch.as_secs() as u32
+}
+
+command!(translate_message(ctx, message) {
+
     let new_content = &message.content[4..];
     let mut lang = String::from("en");
     let mut proc_content = String::from("\u{200b}");
@@ -88,7 +109,38 @@ command!(translate_message(_context, message) {
         }
     }
 
-    let _ = message.reply(&translate(proc_content.trim(), &lang));
+    let content = proc_content.trim();
+    let len = content.len() as u32;
+
+    if len > 100 {
+        let _ = message.reply("Please use fewer characters");
+
+    } else {
+        let t = time();
+        let id = message.author.id.as_u64();
+
+        let total_chars;
+        {
+            let mut data = ctx.data.lock();
+            let mut limits = data.get_mut::<RateLimiter>().unwrap();
+
+            let counter = limits.entry(*id).or_insert(vec![len, t]);
+
+            if t - counter[1] > 86400 {
+                counter[0] = len;
+            } else {
+                counter[0] += len;
+            }
+
+            total_chars = counter[0];
+        }
+
+        if total_chars < 1000 {
+            let _ = message.reply(&translate(content, &lang));
+        } else {
+            let _ = message.reply("You have exceeded your daily limit. Please come back later.");
+        }
+    }
 });
 
 command!(help(_context, message) {
@@ -96,15 +148,15 @@ command!(help(_context, message) {
         m.embed(|e| {
             e.title("Help")
             .description("
-            `?thelp` - Get this page
+`?thelp` - Get this page
 
-            `?tr <text> d-[lang]` - Translate text; example:
+`?tr <text> d-[lang]` - Translate text; example:
 
 ```
 >> ?tr Hello world! d-es
 << @JellyWX: Hola mundo!```
 
-            `?tlangs` - Get a list of all supported languages with codes
+`?tlangs` - Get a list of all supported languages with codes
             ")
         })
     });
