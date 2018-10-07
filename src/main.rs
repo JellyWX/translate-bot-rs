@@ -63,6 +63,7 @@ fn main() {
         .cmd("r", translate_message)
         .cmd("help", help)
         .cmd("langs", langs)
+        .cmd("invite", invite)
     );
     {
         let mut data = client.data.lock();
@@ -112,7 +113,7 @@ command!(translate_message(ctx, message) {
     let content = proc_content.trim();
     let len = content.len() as u32;
 
-    if len > 100 {
+    if len > 120 {
         let _ = message.reply("Please use fewer characters");
 
     } else {
@@ -126,7 +127,7 @@ command!(translate_message(ctx, message) {
 
             let counter = limits.entry(*id).or_insert(vec![len, t]);
 
-            if t - counter[1] > 86400 {
+            if t - counter[1] > 20 {
                 counter[0] = len;
             } else {
                 counter[0] += len;
@@ -157,6 +158,8 @@ command!(help(_context, message) {
 << @JellyWX: Hola mundo!```
 
 `?tlangs` - Get a list of all supported languages with codes
+
+`?tinvite` - Invite the bot
             ")
         })
     });
@@ -164,4 +167,8 @@ command!(help(_context, message) {
 
 command!(langs(_context, message) {
     let _ = message.channel_id.say("A full list of languages and codes is available here: https://gist.github.com/JellyWX/f1d83c6966c93c83c126affd2640886a");
+});
+
+command!(invite(_context, message) {
+    let _ = message.channel_id.say("https://discordapp.com/oauth2/authorize?client_id=471758637493125130&scope=bot&permissions=8");
 });
