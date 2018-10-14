@@ -20,6 +20,8 @@ use typemap::Key;
 
 lazy_static! {
     static ref YANDEX_KEY: String = env::var("YANDEX_KEY").expect("yandex key");
+    static ref CHARS_PER_MESSAGE: u32 = env::var("CHARS").expect("expected a char limit").parse().unwrap();
+    static ref CHARS_PER_DAY: u32 = env::var("CHARS_D").expect("expected a daily char limit").parse().unwrap();
 }
 
 #[derive(Deserialize)]
@@ -113,7 +115,7 @@ command!(translate_message(ctx, message) {
     let content = proc_content.trim();
     let len = content.len() as u32;
 
-    if len > 120 {
+    if len > *CHARS_PER_MESSAGE {
         let _ = message.reply("Please use fewer characters");
 
     } else {
@@ -136,7 +138,7 @@ command!(translate_message(ctx, message) {
             total_chars = counter[0];
         }
 
-        if total_chars < 1000 {
+        if total_chars < *CHARS_PER_DAY {
             let _ = message.reply(&translate(content, &lang));
         } else {
             let _ = message.reply("You have exceeded your daily limit. Please come back later.");
