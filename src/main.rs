@@ -45,6 +45,32 @@ impl Key for RateLimiter {
 struct Handler;
 
 impl EventHandler for Handler {
+    fn guild_create(&self, _context: Context, _guild: serenity::model::guild::Guild, _new: bool) {
+        let guild_count = {
+            let cache = serenity::CACHE.read();
+            cache.all_guilds().len()
+        };
+
+        let c = reqwest::Client::new();
+        let mut m = HashMap::new();
+        m.insert("server_count", guild_count);
+
+        c.post("https://discordbots.org/api/bots/stats").header("Authorization", env::var("DBL_TOKEN").unwrap()).header("Content-Type", "application/json").json(&m).send().unwrap();
+    }
+
+    fn guild_delete(&self, _context: Context, _guild: serenity::model::guild::PartialGuild, _full: Option<std::sync::Arc<serenity::prelude::RwLock<serenity::model::guild::Guild>>>) {
+        let guild_count = {
+            let cache = serenity::CACHE.read();
+            cache.all_guilds().len()
+        };
+
+        let c = reqwest::Client::new();
+        let mut m = HashMap::new();
+        m.insert("server_count", guild_count);
+
+        c.post("https://discordbots.org/api/bots/stats").header("Authorization", env::var("DBL_TOKEN").unwrap()).header("Content-Type", "application/json").json(&m).send().unwrap();
+    }
+
     fn ready(&self, context: Context, _: Ready) {
         println!("Bot online!");
 
